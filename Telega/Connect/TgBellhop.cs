@@ -7,8 +7,10 @@ using Telega.Rpc.Dto;
 using Telega.Rpc.Dto.Types;
 using Telega.Utils;
 
-namespace Telega.Connect {
-    sealed class TgBellhop {
+namespace Telega.Connect
+{
+    sealed class TgBellhop
+    {
         public TgConnectionPool ConnectionPool { get; }
         public Var<TgConnection> CurrentConnection { get; }
         public CustomObservable<UpdatesType> Updates { get; } = new();
@@ -22,7 +24,8 @@ namespace Telega.Connect {
         public void SetSession(Func<Session, Session> func) =>
             CurrentConnection.Get().Session.SetWith(func);
 
-        void MirrorUpdates(TgConnection conn) {
+        void MirrorUpdates(TgConnection conn)
+        {
             conn.Transport.Transport.Updates.Subscribe(
                 onNext: Updates.OnNext,
                 onError: Updates.OnError,
@@ -30,7 +33,8 @@ namespace Telega.Connect {
             );
         }
 
-        async Task<TgConnection> ChangeConn(Func<TgConnection, Task<TgConnection>> f) {
+        async Task<TgConnection> ChangeConn(Func<TgConnection, Task<TgConnection>> f)
+        {
             var oldConn = CurrentConnection.Get();
             var newConn = await f(oldConn).ConfigureAwait(false);
             CurrentConnection.Set(newConn);
@@ -38,7 +42,8 @@ namespace Telega.Connect {
             return newConn;
         }
 
-        public TgBellhop(TgConnectionPool connectionPool, TgConnection currentConnection) {
+        public TgBellhop(TgConnectionPool connectionPool, TgConnection currentConnection)
+        {
             ConnectionPool = connectionPool;
             CurrentConnection = currentConnection.AsVar();
             MirrorUpdates(currentConnection);
@@ -51,23 +56,29 @@ namespace Telega.Connect {
             ILogger logger,
             ConnectInfo connectInfo,
             TgCallMiddlewareChain? callMiddlewareChain = null,
+            TgProxy? proxy = null,
             TcpClientConnectionHandler? connHandler = null
-        ) {
+        )
+        {
             callMiddlewareChain ??= TgCallMiddlewareChain.Default;
             var conn = await TaskWrapper.Wrap(() =>
-                TgConnectionEstablisher.EstablishConnection(logger, connectInfo, callMiddlewareChain, connHandler)
+                TgConnectionEstablisher.EstablishConnection(logger, connectInfo, callMiddlewareChain, proxy,
+                    connHandler)
             ).ConfigureAwait(false);
-            var pool = new TgConnectionPool(logger, conn, callMiddlewareChain, connHandler);
+            var pool = new TgConnectionPool(logger, conn, callMiddlewareChain, proxy, connHandler);
             return new TgBellhop(pool, conn);
         }
 
 
-        async Task<T> CallWithReConnect<T>(ITgFunc<T> func) {
-            try {
+        async Task<T> CallWithReConnect<T>(ITgFunc<T> func)
+        {
+            try
+            {
                 var conn = CurrentConnection.Get();
                 return await conn.Transport.Call(func).ConfigureAwait(false);
             }
-            catch (TgTransportException) {
+            catch (TgTransportException)
+            {
                 var oldConn = CurrentConnection.Get();
                 oldConn.Dispose();
 
@@ -76,11 +87,14 @@ namespace Telega.Connect {
             }
         }
 
-        async Task<T> CallWithMigration<T>(ITgFunc<T> func) {
-            try {
+        async Task<T> CallWithMigration<T>(ITgFunc<T> func)
+        {
+            try
+            {
                 return await CallWithReConnect(func).ConfigureAwait(false);
             }
-            catch (TgDataCenterMigrationException e) {
+            catch (TgDataCenterMigrationException e)
+            {
                 await ChangeConn(x => ConnectionPool.Connect(x, e.Dc)).ConfigureAwait(false);
                 return await CallWithReConnect(func).ConfigureAwait(false);
             }

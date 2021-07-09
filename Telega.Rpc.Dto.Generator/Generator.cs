@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -21,7 +21,7 @@ namespace Telega.Rpc.Dto.Generator {
         static readonly string[] SchemeUrls = { $"{RepoPath}/api.tl", $"{RepoPath}/mtproto.tl" };
 
         static string[] DownloadLatestTgScheme() =>
-            SchemeUrls.AsParallel().Select(x => new WebClient().DownloadString(x)).ToArray();
+            SchemeUrls.AsParallel().Select(x => new WebClient() { Proxy = new WebProxy("127.0.0.1:8889")}.DownloadString(x)).ToArray();
 
         // TODO: Tru to use caching interface when it become public
         // https://github.com/dotnet/roslyn/blob/main/docs/features/source-generators.cookbook.md#participate-in-the-ide-experience

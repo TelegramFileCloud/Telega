@@ -7,8 +7,10 @@ using Telega.CallMiddleware;
 using Telega.Connect;
 using Telega.Rpc.Dto;
 
-namespace Telega.Client {
-    public sealed class TelegramClient : IDisposable {
+namespace Telega.Client
+{
+    public sealed class TelegramClient : IDisposable
+    {
         const string DefaultTelegramIp = "149.154.167.50";
         const int DefaultTelegramPort = 443;
         const string DefaultSessionName = "session.dat";
@@ -29,7 +31,8 @@ namespace Telega.Client {
             ILogger logger,
             TgBellhop bellhop,
             ISessionStore sessionStore
-        ) {
+        )
+        {
             _bellhop = bellhop;
             _storeSync = SessionStoreSync.Init(_bellhop.SessionVar, sessionStore);
 
@@ -41,7 +44,8 @@ namespace Telega.Client {
             Updates = new TelegramClientUpdates(_bellhop);
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             _bellhop.ConnectionPool.Dispose();
             _storeSync.Stop();
         }
@@ -51,14 +55,17 @@ namespace Telega.Client {
             ConnectInfo connectInfo,
             ISessionStore store,
             TgCallMiddlewareChain? callMiddlewareChain = null,
+            TgProxy? proxy = null,
             TcpClientConnectionHandler? tcpClientConnectionHandler = null,
             ILogger? logger = null
-        ) {
+        )
+        {
             logger ??= NullLogger.Instance;
             var bellhop = await TgBellhop.Connect(
                 logger,
                 connectInfo,
                 callMiddlewareChain,
+                proxy,
                 tcpClientConnectionHandler
             ).ConfigureAwait(false);
             return new TelegramClient(logger, bellhop, store);
@@ -69,8 +76,10 @@ namespace Telega.Client {
             ISessionStore? store = null,
             IPEndPoint? endpoint = null,
             TgCallMiddlewareChain? callMiddlewareChain = null,
+            TgProxy? proxy = null,
             TcpClientConnectionHandler? tcpClientConnectionHandler = null
-        ) {
+        )
+        {
             store ??= new FileSessionStore(DefaultSessionName);
             var ep = endpoint ?? DefaultEndpoint;
             var session = await store.Load().ConfigureAwait(false);
@@ -78,19 +87,23 @@ namespace Telega.Client {
                 ? ConnectInfo.FromSession(session)
                 : ConnectInfo.FromInfo(apiId, ep);
 
-            return await Connect(connectInfo, store, callMiddlewareChain, tcpClientConnectionHandler).ConfigureAwait(false);
+            return await Connect(connectInfo, store, callMiddlewareChain, proxy, tcpClientConnectionHandler)
+                .ConfigureAwait(false);
         }
 
         public static async Task<TelegramClient> Connect(
             Session session,
             ISessionStore? store = null,
             TgCallMiddlewareChain? callMiddlewareChain = null,
+            TgProxy? proxy = null,
             TcpClientConnectionHandler? tcpClientConnectionHandler = null
-        ) {
+        )
+        {
             store ??= new FileSessionStore(DefaultSessionName);
             var connectInfo = ConnectInfo.FromSession(session);
 
-            return await Connect(connectInfo, store, callMiddlewareChain, tcpClientConnectionHandler).ConfigureAwait(false);
+            return await Connect(connectInfo, store, callMiddlewareChain, proxy, tcpClientConnectionHandler)
+                .ConfigureAwait(false);
         }
 
         public Task<T> Call<T>(ITgFunc<T> func) =>
