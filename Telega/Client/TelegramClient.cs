@@ -76,6 +76,7 @@ namespace Telega.Client
             ISessionStore? store = null,
             IPEndPoint? endpoint = null,
             TgCallMiddlewareChain? callMiddlewareChain = null,
+            ILogger? logger = null,
             TgProxy? proxy = null,
             TcpClientConnectionHandler? tcpClientConnectionHandler = null
         )
@@ -87,7 +88,7 @@ namespace Telega.Client
                 ? ConnectInfo.FromSession(session)
                 : ConnectInfo.FromInfo(apiId, ep);
 
-            return await Connect(connectInfo, store, callMiddlewareChain, proxy, tcpClientConnectionHandler)
+            return await Connect(connectInfo, store, callMiddlewareChain, proxy, tcpClientConnectionHandler, logger)
                 .ConfigureAwait(false);
         }
 
@@ -95,6 +96,7 @@ namespace Telega.Client
             Session session,
             ISessionStore? store = null,
             TgCallMiddlewareChain? callMiddlewareChain = null,
+            ILogger? logger = null,
             TgProxy? proxy = null,
             TcpClientConnectionHandler? tcpClientConnectionHandler = null
         )
@@ -102,7 +104,7 @@ namespace Telega.Client
             store ??= new FileSessionStore(DefaultSessionName);
             var connectInfo = ConnectInfo.FromSession(session);
 
-            return await Connect(connectInfo, store, callMiddlewareChain, proxy, tcpClientConnectionHandler)
+            return await Connect(connectInfo, store, callMiddlewareChain, proxy, tcpClientConnectionHandler, logger)
                 .ConfigureAwait(false);
         }
 
