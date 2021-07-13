@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Telega.Connect;
@@ -61,13 +62,13 @@ namespace Telega.Client {
                     ? (ITgFunc<bool>) new SaveBigFilePart(
                         fileId: fileId,
                         filePart: chunkIdx++,
-                        bytes: buffer.ToBytesUnsafe(),
+                        bytes: buffer.Take(chunkSize).ToArray().ToBytesUnsafe(),
                         fileTotalParts: chunksCount
                     )
                     : new SaveFilePart(
                         fileId: fileId,
                         filePart: chunkIdx++,
-                        bytes: buffer.ToBytesUnsafe()
+                        bytes: buffer.Take(chunkSize).ToArray().ToBytesUnsafe()
                     )
                 ).ConfigureAwait(false);
                 Helpers.Assert(res, "chunk send failed");
